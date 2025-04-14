@@ -123,6 +123,10 @@ Regardless of the options you choose **both** designs can provide you with the f
   {: .warning } 
   Please be aware of the DHCP relay limitations for L3outs. See: [DHCP Limitations](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-61x/provisioning-core-aci-fabric-services-61x.html#guidelines-and-limitations-for-a-dhcp-relay-policy)
 
+
+{: .note } 
+In an effort to maintain clarity and ease of reading, all configuration snippets and examples have been consolidated into dedicated example sections within this document. This structure ensures that all relevant information and guidance on configurations are easily accessible and presented in a cohesive manner. Readers are encouraged to refer to these sections for detailed configurations and illustrative examples.
+
 ### Simplicity-First Approach Design 
 
 This design serves as an excellent starting point for quickly getting up and running, allowing you to explore the capabilities of Cilium with ease.

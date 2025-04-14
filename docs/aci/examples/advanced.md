@@ -63,7 +63,7 @@ In this example the ESG configuration is optional and can be completely removed 
     * Create a `Context`
     * Add a `Match Rule` and select the `Match Rule` created previously 
     * Select as `Set Rule` and select the `Set Rule` created previously 
-  * Apply the `Route Map` to every `BGP Peer Connectivity Profile` under `Route Control Profile`
+  * Apply the `Route Map` to every `BGP Peer Connectivity Profile` under `Route Control Profile` in the `Import` Direction.
 * Enable BFD:
   * Create a `BFD Interface Policy` and configure it to match the Cilium Default BFD Timers
     * Detection Multiplier: 3
