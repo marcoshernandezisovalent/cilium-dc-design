@@ -7,86 +7,76 @@ nav_order: 4
 
 # Scale Testing - Work In Progress
 
+The [Advanced Design](../../advanced_design) detailed within this document has undergone scalability testing aimed at verifying its effectiveness and reliability across diverse conditions. However, it is crucial to recognize that these tests were performed based on generalized scenarios and assumptions. Given that each organization possesses unique requirements and architectural nuances, conducting independent testing is strongly recommended to validate the design's performance and suitability within the specific deployment environment.
 
-The [Advanced Design](../../advanced_design) outlined in this document has undergone scalability testing to ensure its effectiveness and reliability under various conditions. However, it is important to note that these tests were conducted based on general scenarios and assumptions. As each organization's needs and architecture are unique, we strongly recommend conducting your own testing to validate the design's performance and suitability within your specific environment.
+Customized testing facilitates the identification of potential issues stemming from unique architectural components or specific use cases relevant to the organization. This validation process helps ensure that the proposed solution meets performance expectations and integrates seamlessly with existing systems.
 
-Custom testing will help identify any potential issues that may arise due to unique architectural elements or specific use cases pertinent to your organization. By doing so, you can ensure that the solution meets your performance expectations and integrates seamlessly with your existing systems.
+The Advanced design has currently been tested under the following conditions:
 
+- A 350-node Kubernetes Cluster.
+- Each node advertising 250 BGP `/32` Service Routes.
+- All nodes peering with 2 ACI Border Leaves.
+- An ACI Fabric composed of 4 leaf switches.
+- Clients accessing services via:
+  - An L3Out.
+  - An EPG/ESG.
 
-The Advanced design has been currently tested with:
+## Generic ACI Scale Considerations
 
-- 350 Node Kubernetes Cluster
-- Each Node is advertising 250 BGP /32 Service Routes. 
-- All Nodes peers to 2 ACI Boarder Leaves
-- ACI Fabric is composed by 4 leaves
-- Clients are accessing the service via: 
-  - An L3OUT
-  - An EPG/ESG
-
-## Generic ACI Scale 
-
-In the context of the Isovalent and Cisco DC Fabrics design these are the metrics we need to keep in mind:
+Within the context of the Cilium and Cisco ACI integration design, the following ACI scale metrics should be considered:
 
 {: .note }
-These are metric for ACI 6.1.2, if you are using a different version refer to the [Verified Scalability Guide](https://www.cisco.com/c/en/us/support/cloud-systems-management/application-policy-infrastructure-controller-apic/tsd-products-support-series-home.html) for your version
+These metrics correspond to ACI version 6.1(2). If a different ACI version is deployed, consult the official [Verified Scalability Guide](https://www.cisco.com/c/en/us/support/cloud-systems-management/application-policy-infrastructure-controller-apic/tsd-products-support-series-home.html) for that specific version, as limits may vary. The current date is May 2, 2025.
 
-
-- Floating L3Out: Max of 6 anchors and 32 non-anchor
-- IPs per MAC = 4096
-- BFD neighbors: 2,000 sessions using these minimum BFD timers: minTx:300, minRx:300, multiplier:3
-- Number of BGP neighbors (2000 per leaf with up to 70000 external prefixes with a single path). 20k per fabric scale
-- Shared L3Out (when leaking between VRFs) 2000 IPv4 prefixes
-- External EPGs per L3out (250 per L3out), 600 fabric wide
-- Number of ESGs per Fabric = 10000
-- Number of ESGs per VRF = 4000
-- Number of ESGs per tenant = 4000
-- Number of L3 IP Selectors per leaf = 5000
-- Number of IP Longest Prefix Matches (LPM) entries: 20000 IPv4 with default dual stack profile. Worth noting that changing the profile reduces the amount of supported ECMP paths.
+- **Floating L3Out:** Maximum of 6 anchor leaves and 32 non-anchor leaves.
+- **IPs per MAC:** 4096.
+- **BFD Neighbors:** 2,000 sessions per leaf using minimum BFD timers: minTx: 300ms, minRx: 300ms, multiplier: 3.
+- **BGP Neighbors:** Up to 2,000 per leaf. Fabric-wide scale depends on prefix count and path diversity (e.g., ~70,000 external prefixes with a single path per neighbor might reduce the total neighbor count below the theoretical 20k fabric maximum).
+- **Shared L3Out (Inter-VRF Leaking):** 2,000 IPv4 prefixes per L3Out instance used for leaking.
+- **External EPGs per L3Out:** 250 per L3Out instance, with a fabric-wide limit of 600 ExtEPGs across all L3Outs.
+- **ESGs per Fabric:** 10,000.
+- **ESGs per VRF:** 4,000.
+- **ESGs per Tenant:** 4,000.
+- **L3 IP Selectors per Leaf:** 5,000.
+- **IP Longest Prefix Match (LPM) Entries:** Approximately 20,000 IPv4 entries with the default dual-stack hardware profile. Note that altering the hardware profile can impact other scale limits, including the number of supported ECMP paths.
 
 ## Conducted Tests:
 
 ### Adding/Removing BGP Peers
 
-**Test:**
+**Test Scenario:**
+A Kubernetes node's participation in BGP peering was toggled by removing and subsequently reapplying the specific Kubernetes label that enables Cilium BGP on that node.
 
-Removing and then adding the label that enables the node for BGP peering.
-
-**Impact:**
-
-None. This is expected thanks to Maglev even if the nodes still receives the traffic will just be able to forward it on to the correct POD.
+**Observed Impact:**
+No discernible traffic impact was observed. This behavior is expected due to the nature of Kubernetes service routing (often using mechanisms like Maglev hashing for backend selection). Even if a node is temporarily removed from BGP peering but continues to receive traffic destined for a service IP, Kube-proxy or Cilium's eBPF datapath on that node can typically still forward the traffic directly to an appropriate backend Pod running locally or tunnel/route it to another node hosting a valid backend Pod.
 
 ### Reloading a Kubernetes Node
 
-**Test:**
+**Test Scenario:**
+A Kubernetes node participating in BGP peering was gracefully reloaded.
 
-This test is conducted by gracefully reloading a node.
+**Observed Impact:**
+Minimal traffic disruption was observed. Potential packet drops can occur during the BGP routing table reconvergence period – specifically, if traffic is forwarded to the reloading node *after* it has started shutting down but *before* ACI (or other peers) have removed it as a valid next hop via BFD/BGP updates.
+This potential impact can be further minimized by preemptively removing the node from the BGP peering configuration (e.g., by removing the relevant label) before initiating the reload, allowing routes to withdraw gracefully.
 
-**Impact:**
+### Cilium Agent Upgrade/Restart
 
-Minimal. Traffic can be dropped during Routing Table Re Convergence. I.E. if traffic sent to the node that is reloading before is removed as a valid Next Hop. 
-This issue can be minimized by first removing the node from BGP Peering. 
+The BFD and BGP processes related to external peering typically run within the Cilium agent pod on each Kubernetes node. Restarting the Cilium agent pod (e.g., during a Cilium upgrade or for other maintenance reasons) will cause the BFD session with ACI to drop. However, due to the BGP Graceful Restart capability configured on both ACI and Cilium, the overall impact is minimized.
 
-### Isovalent Networking for Kubernetes Upgrade
+**Test Scenario:**
+The Cilium agent pod on a node participating in BGP peering was restarted.
 
-The BFD and BGP Process are running on the Cilium POD. Restarting the Cilium POD for any reason will result in the BFD adjacency to go down however, thanks to BGP Graceful Restart the impact is minimal.
+**Observed Impact:**
+Minimal to none. Although the BFD session drops, the ACI leaf maintains the BGP routes learned from that node due to BGP Graceful Restart being triggered. Forwarding continues using the existing routes while the Cilium agent restarts and re-establishes the BGP/BFD sessions.
 
-**Test:**
+### Reloading an ACI Anchor Node
 
-Restart the Cilium POD (or Upgrading Cilium)
+**Test Scenario:**
+An ACI anchor leaf switch, participating in BGP peering with Kubernetes nodes, was reloaded non-gracefully (simulating a crash or power loss, where BFD "down" messages might not be sent reliably before failure).
 
-**Impact:**
-
-Minimal to none. A Cilium Agent POD restart triggers Graceful Restart.
-
-## Reloading an Anchor Node
-**Test:**
-
-Reloading an Anchor Node from the CLI without Sending BFD Down Messages
-
-**Impact**
-
-None aside for potential in flight packets. 
-The routing tables are not impacted by this as all the next hops are the Kubernetes Nodes IP.
+**Observed Impact:**
+Minimal impact, primarily limited to potential loss of in-flight packets traversing the specific anchor leaf at the moment of failure.
+The overall routing stability for Kubernetes services remained high. Because the design utilizes Next-Hop Propagation (when running ACI 6.1(2)+ and configured appropriately), the ultimate next-hop IP address for the `/32` service routes installed on other ACI leaves is the IP address of the originating Kubernetes node, not the anchor leaf itself. Therefore, the failure of a single anchor leaf does not invalidate the primary routes used by other leaves to reach the services via the Kubernetes nodes. Traffic simply avoids the failed anchor and utilizes paths through remaining anchor/non-anchor leaves connected to the Kubernetes nodes.
 
 [Next](/cilium-dc-design/docs/aci/examples/examples/){: .btn }
 {: .text-right }
