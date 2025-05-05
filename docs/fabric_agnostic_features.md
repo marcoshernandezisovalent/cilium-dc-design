@@ -13,66 +13,66 @@ parent: Isovalent and Cisco DC Fabrics
 
 ### Native Routing and Auto Direct Node Routes
 
-By enabling these two features we can leverage efficient packet forwarding between PODs without requiring additional encapsulation or overlay networks. By having direct routes to each pod's IP address subnet, PODs can communicate directly over the existing Layer 2 infrastructure, reducing latency and potential overhead associated with tunneling protocols.
+Using these two features allows efficient packet sending between pods without needing extra encapsulation or overlay networks. With direct routes to each pod's IP subnet, Pods can communicate directly over the existing Layer 2 network. This reduces latency and potential overhead caused by tunneling protocols.
 
-The Auto Direct Node Routes feature leverages the existing L2 topology to streamline pod-to-pod communication, ensuring that packet delivery is both efficient and straightforward. It eliminates the need to expose the POD Subnet to the broader network fabric, thereby maintaining a cleaner and simple network architecture.
+The Auto Direct Node Routes feature uses the current L2 network layout to simplify pod-to-pod communication, making packet delivery efficient and simple. It avoids the need to announce the Pod Subnet to the main network fabric, which keeps the network design cleaner and simpler.
 
-This configuration aligns with Cilium's ethos of providing high-performance, scalable, and simple networking for Kubernetes environments. By integrating closely with the Linux kernel's routing capabilities, Cilium can offer robust networking solutions without necessitating complex configurations or additional network infrastructure.
+This setup matches Cilium's goal of providing high-performance, scalable, and simple networking for Kubernetes. By working closely with the Linux kernel's routing features, Cilium offers strong networking solutions without needing complex setups or extra network hardware.
 
 {: .warning}
-This design is intended to address 90% of common use cases. However, if your cluster scales beyond 1,000 nodes, adjustments to the design may be necessary. In such cases, we strongly encourage you to contact Isovalent for additional guidance and support.
+This design aims to cover the vast majority of customer needs. However, if a cluster grows beyond 1,000 nodes, changes to the design might be needed. In these cases, it is strongly suggested to contact Isovalent for more help and support.
 
 ### Isovalent Networking for Kubernetes BGP Control Plane
 
-Cilium BGP Control Plane [Enterprise](https://docs.isovalent.com/configuration-guide/networking/bgpv2/index.html) provides a way for Cilium to advertise routes to connected routers by using the Border Gateway Protocol (BGP). Cilium BGP Control Plane makes pod networks and/or load-balancer services of type LoadBalancer reachable from outside the cluster for environments that support BGP. In Cilium, the BGP Control Plane does not program the Linux host data path, so it cannot be used to establish IP reachability within the cluster or to external IPs.
+The Cilium BGP Control Plane [Enterprise feature](https://docs.isovalent.com/configuration-guide/networking/bgpv2/index.html) lets Cilium announce routes to connected routers using the Border Gateway Protocol (BGP). It makes pod networks or services of Type LoadBalancer reachable from outside the cluster in environments that support BGP. In Cilium, the BGP Control Plane doesn't set up the Linux host's data path directly, so it cannot be used by itself to create IP connections within the cluster or to external IPs.
 
 ### Cilium Egress Gateway
 
-The [Egress Gateway](https://docs.cilium.io/en/stable/network/egress-gateway/egress-gateway) features allows for redirecting traffic originating from pods and destined to specific CIDRs outside the cluster to be routed through particular nodes.
+The [Egress Gateway](https://docs.cilium.io/en/stable/network/egress-gateway/egress-gateway) feature allows sending traffic that starts from pods and goes to specific network ranges (CIDRs) outside the cluster through certain chosen nodes.
 
-When the egress gateway feature is enabled and egress gateway policies are in place, packets leaving the cluster are masqueraded with selected, predictable IPs (`egressIP`) associated with the gateway nodes. This allows for network administrators to apply network controls to pods and or namesapces establishing outbound connectivity.
+When the egress gateway feature is turned on and egress gateway policies are active, packets leaving the cluster have their source IP address changed to selected, known IPs (`egressIP`) linked to the gateway nodes. This lets network administrators set network rules for pods or namespaces making outbound connections.
 
 {: .warning}
-Only Isovalent Networking for Kubernetes supports [Egress Gateway High Availability](https://docs.isovalent.com/configuration-guide/networking/egress-gateway/index.html)
+Only Isovalent Networking for Kubernetes supports [Egress Gateway High Availability](https://docs.isovalent.com/configuration-guide/networking/egress-gateway/index.html) (making sure the egress path keeps working even if one gateway node fails).
 
 ### XDP Acceleration
 
-[The XDP Acceleration](https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#loadbalancer-nodeport-xdp-acceleration) supports NodePort, LoadBalancer services and services with externalIPs for the case where the arriving request needs to be forwarded and the backend is located on a remote node. This feature was introduced in Cilium version 1.8 at the XDP (eXpress Data Path) layer where eBPF is operating directly in the networking driver instead of a higher layer.
-The majority of drivers supporting 10G or higher rates also support native XDP on recent kernel versions.
+[XDP Acceleration](https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#loadbalancer-nodeport-xdp-acceleration) helps speed up NodePort, LoadBalancer services, and services with externalIPs when incoming requests need to be forwarded to a backend pod located on a different node. This feature was added in Cilium version 1.8. It works at the XDP (eXpress Data Path) layer, where eBPF runs directly in the network card driver instead of higher up in the system.
+Most network drivers that support 10Gbps speeds or higher also support native XDP if using a recent kernel version.
 
 ## Advanced Design Only Features
 
 ### Maglev
 
-Incorporating advanced load balancing mechanisms into Kubernetes clusters is essential for maintaining optimal performance and efficient resource utilization. The integration of Cilium with Maglev hashing provides a robust solution for consistent and efficient load distribution, particularly in scenarios involving Equal-Cost Multi-Path (ECMP) routing.
+Using advanced load balancing methods in Kubernetes clusters is important for keeping performance high and using resources well. Combining Cilium with Maglev hashing offers a strong solution for stable and efficient load spreading, especially when using Equal-Cost Multi-Path (ECMP) routing.
 
-Maglev consistent hashing minimizes disruptions by ensuring that each load balancing node has a consistent view and ordering for the backend lookup table such that selecting the backend through the packet's 5-tuple hash will always result in forwarding the traffic to the same backend without having to synchronize state with the other nodes. This not only improves resiliency in case of failures but also achieves better load balancing properties since newly added nodes will make the same consistent backend selection throughout the cluster.
+Maglev consistent hashing reduces problems by making sure each load balancing node has the same view and order for its list of backend servers. This means choosing the backend server based on the packet's details (5-tuple hash) will always send the traffic to the same server without needing to share information with other nodes. This not only makes the system more reliable if failures happen but also spreads the load better because new nodes added to the cluster will choose the same backend server consistently.
 
 ![cilium-maglev](../images/cilium-maglev.gif)
 
-Aside from that, the Maglev consistent hashing algorithm ensures even balancing among backends as well as minimal disruptions in the case where backends are added or removed. Specifically, a flow is highly likely to choose the same backend after adding or removing a backend for a service as it did before the operation. Upon backend removal, the backend lookup tables are reprogrammed with minimal changes for unrelated backends, that is, typical configurations provide the upper bound of at most 1% tolerable difference in the reassignments.
+Besides that, the Maglev consistent hashing method ensures load is spread evenly among backend servers and causes few problems when backends are added or removed. Specifically, a connection is very likely to pick the same backend server after a server is added or removed as it did before. When a server is removed, the backend lists are updated with few changes for other servers. Usually, this means at most 1% of connections might go to a different server than before.
 
-This is particularly important for any network fabric that don't support ECMP Resilient Hashing.
+This is especially important for networks that don't support ECMP Resilient Hashing.
 
-To successfully implement Maglev hashing within a Kubernetes environment using Cilium, a key requirement is that Kubernetes nodes can select the Pod IP as the destination IP for traffic routing. This capability is crucial for maintaining consistent and efficient load balancing across the network. Additionally, for optimal performance and reduced latency, the node where the Pod resides should be able to reply directly back to the network. This direct response mechanism requires the implementation of Direct Server Return (DSR).
+To use Maglev hashing successfully in Kubernetes with Cilium, a main requirement is that Kubernetes nodes can target the Pod IP directly when routing traffic. This ability is needed for keeping load balancing consistent and efficient. Also, for best performance and less delay, the node where the Pod is located should be able to send replies directly back to the network. This direct reply method needs Direct Server Return (DSR).
 
-[This](https://cilium.io/blog/2020/11/10/cilium-19/) blog details explore Maglev in details.
+[This blog post](https://cilium.io/blog/2020/11/10/cilium-19/) explains Maglev in more detail.
 
 ### Direct Server Return
 
-When Direct Server Return (DSR) mode is enabled in Cilium, the efficiency of handling node-external traffic is significantly improved. In this mode, once a request reaches a backend pod located on a remote node, the response is sent directly back to the client from the pod, bypassing the original node that received the request. This eliminates the additional hop needed for reverse SNAT, reducing latency and improving overall network performance.
+When Direct Server Return (DSR) mode is turned on in Cilium, handling traffic from outside the nodes is made much better. In DSR mode, after a request reaches a backend pod on a different node, the reply is sent directly back to the client from that pod. It bypasses the original node that first received the request. This removes the extra step needed for changing the source IP back (reverse SNAT), reducing delay and improving overall network performance.
 
-The DSR mode provides two key benefits:
+DSR mode offers two main benefits:
 
-* Preservation of Source IP: Since the backend pod sends the response directly to the client, the original source IP of the client is preserved. This is particularly beneficial for security and monitoring purposes, as it allows network policies and logging mechanisms on the backend node to accurately identify and match the client's IP address. This can be crucial for implementing fine-grained security policies and for troubleshooting.
-* Reduced Latency and Load: By removing the need for the response to pass back through the node that initially received the request, the latency is reduced. This also decreases the processing load on that node, as it does not have to handle reverse SNAT for responses, allowing it to manage incoming requests more efficiently.
+* **Keeps Source IP:** Because the backend pod sends the reply directly to the client, the client's original source IP is kept. This is very helpful for security and monitoring. It lets network rules and logs on the backend node correctly see and match the client's real IP address. This can be vital for setting detailed security rules and for fixing problems.
+* **Less Delay and Load:** By removing the need for the reply to go back through the node that first received the request, delay is reduced. This also lowers the processing work on that initial node, as it doesn't have to handle changing IPs back for replies. This allows it to handle incoming requests more efficiently.
 
-Overall, enabling DSR in Cilium optimizes network traffic flow, enhances security, and ensures more efficient resource usage within the Kubernetes cluster. It's a strategic choice for environments where performance and accurate client identification are priorities.
+Overall, turning on DSR in Cilium improves network traffic flow, boosts security, and uses resources better within the Kubernetes cluster. It's a good choice for setups where performance and knowing the client's true IP are important.
 
 {: .note}
-To ensure proper functionality of MagLev and Direct Server Return (DSR), it is required to set the service traffic policy to `externalTrafficPolicy: Cluster`. This configuration allows all nodes to forward traffic to the external service IP, ensuring seamless connectivity. For simplicity and consistent traffic routing, we've opted to peer all nodes with the fabric using BGP. However, if there's a desire to reduce the number of BGP peers, BGP peering can be selectively established with a subset of nodes. This can be achieved by utilizing node labels and node selectors within the `IsovalentBGPPeerConfig`, allowing for more targeted and efficient network configurations. 
-If your `egress nodes` are configured to advertise IPs over BGP, it is essential to ensure they are also peering with the fabric. To maintain a clear separation between egress and ingress nodes, you can utilize multiple `IsovalentBGPPeerConfig` configurations. This approach allows you to manage and tailor BGP peering settings individually for different node roles, enhancing network segmentation and operational control.
-If you need help with this configuration please [contact us](../../#how-to-request-design-assistance)
+To make sure Maglev and Direct Server Return (DSR) work correctly, the service traffic policy needs to be set to `externalTrafficPolicy: Cluster`. This setup lets all nodes forward traffic to the external service IP, ensuring connections work smoothly. To keep things simple, this design uses BGP peering between all nodes and the fabric. However, if the goal is to reduce the number of BGP neighbors, BGP peering can be set up only with a chosen group of nodes. This can be done using node labels and node selectors in the `IsovalentBGPPeerConfig`, allowing more specific network setups.
+If your `egress nodes` are set up to announce IPs over BGP, it is important to ensure they also have BGP connections with the fabric. To keep egress and ingress nodes separate, multiple `IsovalentBGPPeerConfig` settings can be used. This method lets you manage BGP settings separately for different node roles, improving network separation and operational control.
+For help with this configuration, please [contact us](../../#how-to-request-design-assistance).
 
 
 [Next](/cilium-dc-design/docs/aci/aci_designs/){: .btn }
