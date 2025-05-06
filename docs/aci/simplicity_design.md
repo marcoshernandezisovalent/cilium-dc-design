@@ -29,10 +29,7 @@ This Basic Design provides the following capabilities:
     Internal cluster micro-segmentation using [CiliumNetworkPolicies](https://docs.cilium.io/en/stable/security/policy/index.html) is a key feature of Cilium itself, but detailed configuration is beyond the scope of this ACI integration guide.
 
 * Secures traffic initiated *from* Pods that is NATted using specific Egress IPs, leveraging ACI contracts applied via the dedicated `egress` ESGs.
-* Supports DHCP Relay: Enables Kubernetes nodes to obtain IP addresses automatically during bootstrap via the primary BD, simplifying deployment and scaling.
-
-    {: .note }
-    Ensure the primary node subnet on the BD is marked as "Primary" within ACI configuration, as DHCP relay functionality is typically tied to the primary subnet.
+* Supports DHCP Relay: Enables Kubernetes nodes to obtain IP addresses automatically during bootstrap via the ACI fabric, simplifying deployment and scaling.
 
 * Provides direct visibility of node IPs within the ACI fabric via the EPG/ESG association.
 * Supports heterogeneous node types: The cluster can comprise a mix of bare-metal servers and virtual machines on various hypervisors, provided they connect to the designated ACI EPG.
