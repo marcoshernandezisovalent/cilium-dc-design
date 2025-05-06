@@ -66,7 +66,7 @@ This ensures that replies to client requests arriving via the L3Out are routed b
 *Cilium BGP Control Plane Traffic Flows*
 
 {: .note }
-For nodes configured with multiple network interfaces, it is fundamental to ensure that [kubelet's `node-ip` is set correctly on each node](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/#create-the-config-file). In the Basic Design, this **must** be the IP address of the primary interface connected to the main ACI EPG/BD. Cilium relies on this primary node IP for internal pod-to-pod east-west routing and does not typically provide mechanisms to choose alternative interfaces for this traffic.
+For nodes configured with multiple network interfaces, it is fundamental to ensure that [kubelet's `node-ip` is set correctly on each node](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/#create-the-config-file). In the Basic Design, this **must** be the IP address of the primary interface connected to the main ACI EPG/BD. Cilium relies on this primary node IP for internal pod-to-pod east-west routing and does not provide mechanisms to choose alternative interfaces for this traffic.
 
 Refer to the [ACI BGP Design](/cilium-dc-design/docs/aci/aci_bgp_design/) section for general ACI BGP configuration details applicable here.
 
