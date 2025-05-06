@@ -13,11 +13,11 @@ parent: Isovalent and Cisco DC Fabrics
 
 ### Native Routing and Auto Direct Node Routes
 
-Using these two features allows efficient packet sending between pods without needing extra encapsulation or overlay networks. With direct routes to each pod's IP subnet, Pods can communicate directly over the existing Layer 2 network. This reduces latency and potential overhead caused by tunneling protocols.
+Using these two features allows highly efficient packet forwarding between pods without the need for additional encapsulation or overlay networks. 
 
-The Auto Direct Node Routes feature uses the current L2 network layout to simplify pod-to-pod communication, making packet delivery efficient and simple. It avoids the need to announce the Pod Subnet to the main network fabric, which keeps the network design cleaner and simpler.
+In a Kubernetes deployment running in direct mode on a network fabric, each pod is assigned an IP address from a routable subnet with direct Layer 2 or Layer 3 connectivity. This allows pods to communicate natively over the physical network infrastructure, eliminating the latency, CPU overhead, and complexity typically associated with tunneling protocols such as VXLAN or GRE. 
 
-This setup matches Cilium's goal of providing high-performance, scalable, and simple networking for Kubernetes. By working closely with the Linux kernel's routing features, Cilium offers strong networking solutions without needing complex setups or extra network hardware.
+By maintaining direct routing to each pod subnet, the solution ensures minimal packet traversal path and maximum throughput delivering the best possible performance for East-West traffic in the cluster. This architecture is especially beneficial in performance-sensitive environments where low latency and deterministic network behavior are critical.
 
 {: .warning}
 This design aims to cover the vast majority of customer needs. However, if a cluster grows beyond 1,000 nodes, changes to the design might be needed. In these cases, it is strongly suggested to contact Isovalent for more help and support.
