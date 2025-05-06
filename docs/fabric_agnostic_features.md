@@ -38,7 +38,7 @@ Only Isovalent Networking for Kubernetes supports [Egress Gateway High Availabil
 ### XDP Acceleration
 
 [XDP Acceleration](https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/#loadbalancer-nodeport-xdp-acceleration) helps speed up NodePort, LoadBalancer services, and services with externalIPs when incoming requests need to be forwarded to a backend pod located on a different node. This feature was added in Cilium version 1.8. It works at the XDP (eXpress Data Path) layer, where eBPF runs directly in the network card driver instead of higher up in the system.
-Most network drivers that support 10Gbps speeds or higher also support native XDP if using a recent kernel version.
+Most network drivers that support 10Gbps speeds or higher also support native XDP if using a recent kernel version. For a list of drivers taht support XDP, please refer to the [official Cilium documentation](https://docs.cilium.io/en/stable/reference-guides/bpf/progtypes/#xdp-drivers)
 
 ## Advanced Design Only Features
 
