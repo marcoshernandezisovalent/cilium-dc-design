@@ -76,9 +76,9 @@ From the Cilium perspective, the main consideration in this design is determinin
 
 **Deployment Recommendations:**
 
-* **Redundancy:** Deploy a minimum of two `ingress nodes`, preferably connected to different ACI leaf switches handling the L3Out peering. This provides resilience against `ingress node` or leaf failures and allows for hitless maintenance or upgrades.
+* **Redundancy:** Deploy a minimum of two `ingress nodes`, connected to a pair of ACI leaf switches handling the L3Out peering. This provides resilience against `ingress node` or leaf failures and allows for hitless maintenance or upgrades.
 * **Dedicated vs. Shared:** Depending on cluster scale, ingress traffic volume, and performance requirements, dedicating specific nodes solely for the ingress function can offer advantages:
-    * **Performance Predictability:** If regular application Pods are not scheduled onto `ingress nodes`, ingress traffic typically traverses a predictable path (Client -> ACI -> Ingress Node -> Worker Node), potentially leading to more consistent latency.
+    * **Performance Predictability:** If regular application Pods are not scheduled onto `ingress nodes`, ingress traffic typically traverses a predictable path (Client -> ACI -> Ingress Node -> Worker Node), leading to more consistent latency.
     * **Resource Isolation:** Dedicated nodes ensure that their CPU, memory, and network bandwidth are fully available for handling ingress traffic and BGP processing, without contention from application workloads.
     * **Reduced Peering Scale:** Since only a subset of nodes establishes BGP peering with the fabric, the overall BGP management overhead on both ACI and Cilium is reduced compared to peering with all nodes.
     * **Specialized Hardware:** Not all nodes in a cluster need identical hardware. High-performance hardware (e.g., faster CPUs, high-throughput NICs) can be specifically utilized for the `ingress nodes`. For example, using [CiliumNodeConfig](https://docs.cilium.io/en/stable/configuration/per-node-config/#per-node-configuration), bare-metal nodes equipped with Mellanox or Intel NICs supporting features like [Cilium's Big TCP](https://docs.cilium.io/en/stable/operations/performance/tuning/#ipv4-big-tcp) can be deployed, potentially achieving very high throughput per ingress node.
@@ -87,7 +87,7 @@ Refer to the [Example configuration](../examples/examples/) section of this docu
 
 ## Cilium Egress Design Considerations
 
-For handling egress traffic in this Basic Design, Cilium's Egress Gateway feature utilizes IP addresses sourced from the secondary subnets configured on the primary ACI BD. These Egress IPs are then classified using ACI ESGs for policy enforcement.
+For handling egress traffic in this Basic Design, Cilium's Egress Gateway feature utilizes IP addresses sourced from the secondary subnets configured on the ACI BD. These Egress IPs are then classified using ACI ESGs for policy enforcement.
 
 **Deployment Recommendations:**
 
