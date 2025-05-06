@@ -72,7 +72,9 @@ Overall, turning on DSR in Cilium improves network traffic flow, boosts security
 
 {: .note}
 To make sure Maglev and Direct Server Return (DSR) work correctly, the service traffic policy needs to be set to `externalTrafficPolicy: Cluster`. This setup lets all nodes forward traffic to the external service IP, ensuring connections work smoothly. To keep things simple, this design uses BGP peering between all nodes and the fabric. However, if the goal is to reduce the number of BGP neighbors, BGP peering can be set up only with a chosen group of nodes. This can be done using node labels and node selectors in the `IsovalentBGPPeerConfig`, allowing more specific network setups.
+
 If your `egress nodes` are set up to announce IPs over BGP, it is important to ensure they also have BGP connections with the fabric. To keep egress and ingress nodes separate, multiple `IsovalentBGPPeerConfig` settings can be used. This method lets you manage BGP settings separately for different node roles, improving network separation and operational control.
+
 For help with this configuration, please [contact us](../../#how-to-request-design-assistance).
 
 
