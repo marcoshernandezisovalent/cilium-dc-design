@@ -17,7 +17,7 @@ The basic network infrastructure for this Basic Design is composed of the follow
     * Configuration includes a **primary subnet** matching the Kubernetes node IP range. The BD Subnet Virtual IP (SVI) serves as the default gateway for the nodes.
     * Configuration includes **one or more secondary subnets**. These IP ranges are designated for use by the Cilium Egress Gateway feature as source IPs for egress traffic.
 * **Primary Endpoint Group (EPG):** An EPG linked to the primary BD is created. The primary network interfaces of all Kubernetes nodes are associated with this EPG (e.g., via static path bindings or VMM integration).
-* **Node Endpoint Security Group (ESG):** A `node` ESG is created. An IP-based selector matching the primary node subnet groups all nodes within this ESG, allowing common ACI contracts for node-initiated traffic.
+* **Node Endpoint Security Group (ESG):** A `node` ESG is created. An IP-based selector matching the primary node subnet groups all nodes within this ESG, allowing nodes within the ESG to communicate without contracts.
 * **Egress Endpoint Security Groups (ESGs):** Additional `egress` ESGs are created. Each uses an IP-based selector matching specific `Egress IP` addresses (sourced from the BD's secondary subnets). These ESGs classify egress traffic based on Pod/Namespace identity for granular ACI contract enforcement.
 * **Dedicated L3Out for Ingress:** A separate Floating SVI L3Out is configured. This L3Out establishes BGP peering exclusively with a designated subset of Kubernetes nodes (`ingress nodes`) for advertising external Kubernetes Services.
 
