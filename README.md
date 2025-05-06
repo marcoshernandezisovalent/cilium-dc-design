@@ -1,13 +1,13 @@
 # Isovalent Best Practices for the Modern Datacenter
 
-Welcome to the Isovalent Best Practices for the Modern Datacenter Documentation Site! 
-This resource is designed to provide guidance and insights into the Networking best practices for deploying Kubernetes Clusters using Isovalent as CNI. While we strive to cover a wide range of scenarios and design considerations, please note that the information provided here addresses the most common designs and situations. We encourage users to conduct their own research and tailor their designs to meet specific needs and requirements.
+This documentation site provides information and ideas on good network practices for setting up Kubernetes Clusters using Isovalent as the CNI (Container Network Interface).
 
-The Isovalent Best Practices for the Modern Datacenter Documentation Site serves as a comprehensive guide to help you navigate through various concepts and options to strike a balance between feature and complexity when Deploying Kubernetes Cluster in the Datacenter. 
-Our goal is to equip you with the knowledge and tools needed to implement effective and efficient solutions.
+This site tries to cover many setups and design ideas, but the information here mainly covers the most usual designs and situations. It is suggested that users do their own research and adjust designs to meet their own needs.
 
-We welcome contributions from the community! If you have insights or improvements you'd like to share, please feel free to submit a pull request or open an issue on our GitHub repository.
+The Isovalent Best Practices site is a full guide to help understand different ideas and choices to find a balance between features and simplicity when setting up Kubernetes clusters in the Datacenter. The goal is to give users the information and tools needed to set up good and efficient solutions.
+
+Contributions from the community are welcome. Ideas or suggestions for improvement can be shared by submitting a pull request or opening an issue on the project's GitHub repository.
 
 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project uses the MIT License - see the LICENSE file for details.
