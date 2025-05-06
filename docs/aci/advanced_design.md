@@ -28,7 +28,7 @@ This design provides the following capabilities:
   Be aware of the specific guidelines and limitations associated with DHCP Relay policies configured on L3Outs. Refer to the official Cisco documentation, such as: [DHCP Limitations](https://www.cisco.com/c/en/us/td/docs/dcn/aci/apic/6x/basic-configuration/cisco-apic-basic-configuration-guide-61x/provisioning-core-aci-fabric-services-61x.html#guidelines-and-limitations-for-a-dhcp-relay-policy).
 
 * Supports heterogeneous node types: The cluster can comprise a mix of bare-metal servers and virtual machines running on various hypervisors, provided network connectivity is established.
-* Offers routing simplicity: The default gateway for the nodes is typically the ACI Floating SVI IP address associated with the main L3Out.
+* Offers routing simplicity: The default gateway for the nodes is the ACI Floating SVI IP address associated with the L3Out.
 * Eliminates the need to advertise the Kubernetes Pod CIDR block into ACI.
 * Leverages BGP-based ECMP for external Kubernetes service load balancing, potentially enhanced with resilient hashing techniques (like Maglev, implemented by Cilium).
 * Achieves near-optimal traffic flows for external services through [Direct Server Return (DSR)](/cilium-dc-design/docs/fabric_agnostic_features/#direct-server-return).
@@ -61,10 +61,10 @@ Regarding the design for handling egress traffic originating from Kubernetes Pod
 
 ### Option 1: Egress IP Advertisement via BGP (Preferred)
 
-Cilium can advertise the specific IP addresses used by its Egress Gateway feature directly via BGP. This is typically configured within the Cilium BGP policy resources by specifying the Egress Gateway IP pool for advertisement.
-ACI External EPGs (ExtEPGs) can then be used to classify this egress traffic based on the advertised Egress IP prefixes, allowing contract-based policies to be applied.
+Cilium can advertise the specific IP addresses used by its Egress Gateway feature directly via BGP. This can be done easily by adding in the `IsovalentBGPAdvertisement` CRD the `advertisementType: EgressGateway`
+ACI External EPGs (ExtEPGs) can then be used to classify this egress traffic based on the advertised Egress IP prefixes, allowing contracts to be applied.
 
-If the number of unique Egress IPs leads to concerns about ACI ExtEPG scale limits, *and* if egress traffic inspection via a firewall is required anyway, an alternative approach involves using a single ExtEPG that matches the entire Egress Gateway IP subnet. Service Graph redirection can then be employed to forward all traffic matching this ExtEPG to the firewall for policy enforcement.
+If the number of unique Egress IPs leads to concerns about ACI ExtEPG scale limits, *and/or* if egress traffic inspection via a firewall is required anyway, an alternative approach involves using a single ExtEPG that matches the entire Egress Gateway IP subnet. Service Graph redirection can then be employed to forward all traffic matching this ExtEPG to the firewall for policy enforcement.
 
 This BGP-based option maintains design simplicity, as all nodes (including those potentially acting as egress gateways) can remain topologically identical, connecting primarily through the main L3Out.
 
@@ -86,7 +86,7 @@ It is important to emphasize that this design specifically targets traffic *leav
 
 When implementing the ESG-based egress design (Option 2), the designated Egress nodes require configuration with two network interfaces:
 
-* **Primary Node Interface:** Connects to the main ACI L3Out (shared with other nodes). This interface handles standard node-to-node communication and potentially Kubernetes service traffic if the node also participates in BGP. Its IP address should be configured as the primary `node-ip` for kubelet.
+* **Primary Node Interface:** Connects to the ACI L3Out (shared with other nodes). This L3out handles node-to-node communications and potentially Kubernetes service traffic if the node also participates in BGP. Its IP address should be configured as the primary `node-ip` for kubelet.
     * It is not strictly necessary for nodes dedicated *solely* to egress traffic to establish BGP peering via this interface, although they can if also serving ingress traffic.
 * **Dedicated Egress Interface:** Connects to the separate ACI BD and EPG designated for egress traffic, where ESGs are configured. This interface carries the actual Pod-initiated egress traffic sourced from the `Egress IP` addresses.
 
